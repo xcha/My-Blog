@@ -5,6 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/rbac";
 import { redirect } from "next/navigation";
 
+import { updateTag } from "next/cache";
+
 type ActionState = { ok: boolean; message?: string };
 
 const createSchema = z.object({
@@ -49,8 +51,7 @@ export async function createComment(
   await prisma.comment.create({
     data: { postId, authorId: session.user.id, content },
   });
-
-  // 直接回到详情页，让页面重新拉取最新评论
+  updateTag(`post:slug:${slug}`);
   redirect(`/posts/${slug}`);
 }
 
@@ -83,6 +84,48 @@ export async function deleteComment(formData: FormData) {
     redirect("/forbidden");
   }
 
-  await prisma.comment.delete({ where: { id: commentId } });
+  await prisma.comment.update({
+    where: { id: commentId },
+    data: {
+      status: "DELETED",
+      moderatedAt: new Date(),
+      moderatedById: session.user.id,
+      reason: isAdmin ? "管理员删除" : "作者删除",
+    },
+  });
+  redirect(`/posts/${slug}`);
+}
+
+const moderateSchema = z.object({
+  commentId: z.string().min(1),
+  slug: z.string().min(1),
+  action: z.enum(["hide", "unhide"]),
+  reason: z.string().max(100).optional(),
+});
+
+export async function moderateComment(formData: FormData) {
+  const session = await requireUser();
+  if (session.user.role !== "ADMIN") redirect("/forbidden");
+
+  const parsed = moderateSchema.safeParse({
+    commentId: formData.get("commentId"),
+    slug: formData.get("slug"),
+    action: formData.get("action"),
+    reason: formData.get("reason")?.toString() || undefined,
+  });
+  if (!parsed.success) throw new Error("参数不合法");
+
+  const { commentId, slug, action, reason } = parsed.data;
+
+  await prisma.comment.update({
+    where: { id: commentId },
+    data: {
+      status: action === "hide" ? "HIDDEN" : "VISIBLE",
+      moderatedAt: new Date(),
+      moderatedById: session.user.id,
+      reason: action === "hide" ? reason || "管理员屏蔽" : null,
+    },
+  });
+
   redirect(`/posts/${slug}`);
 }

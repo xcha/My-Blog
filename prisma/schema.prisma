@@ -3,7 +3,6 @@
 
 // Get a free hosted Postgres database in seconds: `npx create-db`
 
-
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
@@ -19,23 +18,27 @@ enum Role {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  name      String?
-  email     String   @unique
+  id       String  @id @default(cuid())
+  name     String?
+  email    String  @unique
   // Credentials 登录需要存密码哈希；OAuth 登录可以为空（但我们先做邮箱/密码）
-  password  String?
-  role      Role     @default(USER)
+  password String?
+  role     Role    @default(USER)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   // NextAuth 关联
-  accounts  Account[]
-  sessions  Session[]
+  accounts Account[]
+  sessions Session[]
 
   // 业务关联
-  posts     Post[]
-  comments  Comment[]
+  posts Post[]
+
+  comments          Comment[]  @relation("CommentAuthor")
+  moderatedComments Comment[]  @relation("CommentModerator")
+  uploads           Upload[]
+  auditLogs         AuditLog[]
 }
 
 enum PostStatus {
@@ -46,38 +49,62 @@ enum PostStatus {
 }
 
 model Post {
-  id          String     @id @default(cuid())
-  title       String
-  slug        String     @unique
-  content     String
+  id      String @id @default(cuid())
+  title   String
+  slug    String @unique
+  content String
 
   status      PostStatus @default(DRAFT)
   isPinned    Boolean    @default(false)
   publishedAt DateTime?
 
-  authorId    String
-  author      User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
 
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  comments    Comment[]
+  comments Comment[]
+  tags     PostTag[]
+
+  searchVector Unsupported("tsvector")? @map("search_vector")
+
+  @@index([status, publishedAt])
+  @@index([publishedAt])
+  @@index([searchVector], type: Gin)
 }
+
+enum CommentStatus {
+  VISIBLE // 正常展示
+  HIDDEN // 管理员屏蔽（还在库里，但普通用户看不到）
+  DELETED // 软删除（作者/管理员删除后）
+}
+
 model Comment {
-  id        String   @id @default(cuid())
-  content   String
+  id      String @id @default(cuid())
+  content String
 
-  postId    String
-  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  status      CommentStatus @default(VISIBLE)
+  // 软删除/治理审计字段
+  moderatedAt DateTime?
+  reason      String?
 
-  authorId  String
-  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  postId String
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  authorId String
+  author   User   @relation("CommentAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+
+  // 谁执行的屏蔽/删除（管理员/本人）
+  moderatedById String?
+  moderatedBy   User?   @relation("CommentModerator", fields: [moderatedById], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([postId])
   @@index([authorId])
+  @@index([status])
 }
 
 /**
@@ -120,4 +147,58 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+model Upload {
+  id       String @id @default(cuid())
+  url      String @unique
+  filename String
+  mimeType String
+  size     Int
+
+  uploaderId String
+  uploader   User   @relation(fields: [uploaderId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([uploaderId])
+}
+
+model Tag {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  slug      String   @unique
+  createdAt DateTime @default(now())
+
+  posts PostTag[]
+}
+
+model PostTag {
+  postId String
+  tagId  String
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  tag  Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([postId, tagId])
+  @@index([tagId])
+  // PostTag
+  @@index([postId])
+}
+
+model AuditLog {
+  id      String @id @default(cuid())
+  actorId String
+  actor   User   @relation(fields: [actorId], references: [id], onDelete: Cascade)
+
+  action     String // 如: user.setRole / post.approve / comment.hide
+  targetType String? // 如: User/Post/Comment/Upload
+  targetId   String?
+  meta       Json? // 扩展信息（旧值/新值/原因等）
+
+  createdAt DateTime @default(now())
+
+  @@index([actorId])
+  @@index([action])
+  @@index([createdAt])
 }

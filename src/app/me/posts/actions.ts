@@ -6,11 +6,14 @@ import { requireUser } from "@/lib/rbac";
 import { slugify } from "@/lib/slug";
 import { revalidatePath } from "next/cache";
 
+import { revalidateTag } from "next/cache";
+
 const upsertSchema = z.object({
   postId: z.string().optional(),
   title: z.string().min(1, "标题不能为空").max(120, "标题太长"),
   content: z.string().min(1, "内容不能为空"),
   action: z.enum(["save_draft", "submit_review"]),
+  tags: z.string().optional(),
 });
 
 export async function upsertMyPost(formData: FormData) {
@@ -25,6 +28,14 @@ export async function upsertMyPost(formData: FormData) {
   if (!parsed.success) throw new Error("参数不合法");
 
   const { postId, title, content, action } = parsed.data;
+
+  const rawTags = (parsed.data.tags ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  // 去重 + 限制数量（防止滥用）
+  const tagNames = Array.from(new Set(rawTags)).slice(0, 5);
 
   // 难点：slug 防冲突（标题相同也能发）
   const base = slugify(title) || "post";

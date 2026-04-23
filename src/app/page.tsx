@@ -11,6 +11,9 @@ export default async function HomePage() {
       slug: true,
       isPinned: true,
       publishedAt: true,
+      tags: {
+        select: { tag: { select: { name: true, slug: true } } },
+      },
     },
   });
 
@@ -35,6 +38,18 @@ export default async function HomePage() {
             href={`/posts/${p.slug}`}
             className="block rounded border p-4 hover:bg-gray-50"
           >
+            <div className="mt-2 flex flex-wrap gap-2">
+              {p.tags.map((t) => (
+                <Link
+                  key={t.tag.slug}
+                  href={`/tags/${t.tag.slug}`}
+                  className="rounded bg-gray-100 px-2 py-0.5 text-xs hover:bg-gray-200"
+                >
+                  {t.tag.name}
+                </Link>
+              ))}
+            </div>
+
             <div className="font-semibold">
               {p.isPinned ? "📌 " : ""}
               {p.title}

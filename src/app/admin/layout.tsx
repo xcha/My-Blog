@@ -15,10 +15,21 @@ export default function AdminLayout({
               <Link className="underline" href="/admin">
                 概览
               </Link>
+              <Link className="underline" href="/admin/posts">
+                文章管理
+              </Link>
               <Link className="underline" href="/admin/users">
                 用户管理
               </Link>
-              {/* 下一步我们会加：文章管理、评论管理 */}
+              <Link className="underline" href="/admin/comments">
+                评论管理
+              </Link>
+              <Link className="underline" href="/admin/uploads">
+                图片管理
+              </Link>
+              <Link className="underline" href="/admin/audit">
+                审计日志
+              </Link>
             </nav>
           </div>
         </aside>

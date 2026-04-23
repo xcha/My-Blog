@@ -26,11 +26,17 @@ export default async function AdminPage() {
   );
 }
 
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+
 function Stat({ title, value }: { title: string; value: number }) {
   return (
-    <div className="rounded border p-4">
-      <div className="text-sm text-gray-600">{title}</div>
-      <div className="mt-2 text-2xl font-bold">{value}</div>
-    </div>
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm text-muted-foreground">{title}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="text-2xl font-bold">{value}</div>
+      </CardContent>
+    </Card>
   );
 }

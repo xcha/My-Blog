@@ -1,11 +1,16 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { prisma } from "@/lib/prisma";
+// import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import CommentForm from "./CommentForm";
 import { deleteComment } from "./actions";
 
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import rehypeSanitize from "rehype-sanitize";
+
+import { getPublicPostBySlug } from "@/lib/post-queries";
 export default async function PostDetailPage({
   params,
 }: {
@@ -13,27 +18,33 @@ export default async function PostDetailPage({
 }) {
   const { slug } = await params;
   const session = await auth();
+  // const isAdmin = session?.user?.role === "ADMIN";
 
-  const post = await prisma.post.findFirst({
-    where: { slug, status: "PUBLISHED" },
-    select: {
-      id: true,
-      title: true,
-      content: true,
-      publishedAt: true,
-      author: { select: { email: true, name: true } },
-      comments: {
-        orderBy: { createdAt: "desc" },
-        select: {
-          id: true,
-          content: true,
-          createdAt: true,
-          authorId: true,
-          author: { select: { email: true, name: true } },
-        },
-      },
-    },
-  });
+  // const post = await prisma.post.findFirst({
+  //   where: { slug, status: "PUBLISHED" },
+  //   select: {
+  //     id: true,
+  //     title: true,
+  //     content: true,
+  //     publishedAt: true,
+  //     author: { select: { email: true, name: true } },
+  //     comments: {
+  //       where: isAdmin ? {} : { status: "VISIBLE" },
+  //       orderBy: { createdAt: "desc" },
+  //       select: {
+  //         id: true,
+  //         content: true,
+  //         createdAt: true,
+  //         authorId: true,
+  //         status: true,
+  //         reason: true,
+  //         author: { select: { email: true, name: true } },
+  //       },
+  //     },
+  //   },
+  // });
+
+  const post = await getPublicPostBySlug(slug);
 
   if (!post) notFound();
 
@@ -51,10 +62,28 @@ export default async function PostDetailPage({
         作者：{post.author.name ?? post.author.email} ·{" "}
         {post.publishedAt ? new Date(post.publishedAt).toLocaleString() : ""}
       </div>
+      {post.tags.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {post.tags.map((t) => (
+            <Link
+              key={t.tag.slug}
+              href={`/tags/${t.tag.slug}`}
+              className="rounded bg-gray-100 px-2 py-0.5 text-xs hover:bg-gray-200"
+            >
+              {t.tag.name}
+            </Link>
+          ))}
+        </div>
+      )}
 
-      {/* 先用纯文本展示，后面我们再升级 Markdown/富文本 */}
-      <article className="mt-6 whitespace-pre-wrap leading-7">
-        {post.content}
+      {/* DONE 先用纯文本展示，后面我们再升级 Markdown/富文本 */}
+      <article className="prose mt-6 max-w-none">
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm]}
+          rehypePlugins={[rehypeSanitize]}
+        >
+          {post.content}
+        </ReactMarkdown>
       </article>
 
       <hr className="my-8" />
