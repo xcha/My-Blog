@@ -1,0 +1,36 @@
+services:
+  db:
+    image: postgres:16
+    restart: always
+    environment:
+      POSTGRES_DB: blog_db
+      POSTGRES_USER: blog_user
+      POSTGRES_PASSWORD: your_strong_password
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  web:
+    build: .
+    restart: always
+    depends_on:
+      - db
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://blog_user:Zdx08080.@db:5432/blog_db?schema=public
+      NEXTAUTH_URL: http://lianci.cloud
+      NEXTAUTH_SECRET: "Zdx08080."
+
+      SEED_ADMIN_EMAIL: admin@lianci.cloud
+      SEED_ADMIN_PASSWORD: Zdx08080.
+      SEED_ADMIN_NAME: Admin
+    volumes:
+      # 让 public/uploads 持久化（你现在图片上传写这里）
+      - uploads:/app/public/uploads
+    ports:
+      - "3000:3000"
+
+volumes:
+  pgdata:
+  uploads:
