@@ -48,7 +48,7 @@ export function getPublicPostBySlug(slug: string) {
           },
           comments: {
             where: { status: "VISIBLE" },
-            orderBy: { createdAt: "desc" },
+            orderBy: { createdAt: "asc" },
             select: {
               id: true,
               content: true,
