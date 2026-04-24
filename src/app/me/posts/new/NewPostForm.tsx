@@ -5,6 +5,7 @@ import { toast } from "sonner";
 
 import MarkdownEditor from "@/components/MarkdownEditor";
 import { upsertMyPost } from "../actions";
+import Link from "next/link";
 
 import {
   Card,
@@ -27,6 +28,9 @@ export default function NewPostForm() {
     <Card>
       <CardHeader>
         <CardTitle>写文章</CardTitle>
+        <Link className="text-sm underline" href="/">
+          ← 返回首页
+        </Link>
         <CardDescription>
           支持 Markdown、图片上传、标签（逗号分隔）
         </CardDescription>

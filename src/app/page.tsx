@@ -20,7 +20,7 @@ export default async function HomePage() {
   return (
     <div className="mx-auto max-w-3xl p-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">博客</h1>
+        <h1 className="text-xl font-bold">恋次的个人博客</h1>
         <div className="flex gap-2">
           <Link className="rounded border px-3 py-1" href="/me/posts">
             写作中心

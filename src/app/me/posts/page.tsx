@@ -62,9 +62,16 @@ export default async function MyPostsPage({
     <div className="mx-auto max-w-5xl p-6 space-y-4">
       <div className="flex items-start justify-between gap-3">
         <div>
+          <Link className="text-sm underline" href="/">
+            ← 返回首页
+          </Link>
           <h1 className="text-xl font-bold">写作中心</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             草稿 → 提交审核（PENDING）→ 管理员发布（PUBLISHED）/驳回（REJECTED）
+          </p>{" "}
+          <p className="mt-1 text-sm text-muted-foreground">
+            由于本站仅处于灰度测试阶段 所有用户再发布文章后
+            可以直接到后台通过审核
           </p>
         </div>
 

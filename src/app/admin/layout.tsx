@@ -12,6 +12,9 @@ export default function AdminLayout({
           <div className="rounded border p-4">
             <div className="font-bold">Admin</div>
             <nav className="mt-3 flex flex-col gap-2 text-sm">
+              <Link className="text-sm underline" href="/">
+                ← 返回首页
+              </Link>
               <Link className="underline" href="/admin">
                 概览
               </Link>
